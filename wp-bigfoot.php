@@ -52,7 +52,7 @@ class WP_Bigfoot	{
 	}
 
 	function add_admin_pages(){
-		add_submenu_page("edit.php", __('Footnotes', 'wpbigfoot'), __('Footnotes', 'wpbigfoot'), 'edit_posts', __FILE__, array($this, 'output_existing_menu_sub_admin_page'));
+#		add_submenu_page("edit.php", __('Footnotes', 'wpbigfoot'), __('Footnotes', 'wpbigfoot'), 'edit_posts', __FILE__, array($this, 'output_existing_menu_sub_admin_page'));
 	}
 
 	function shortcode_footnote( $atts, $content=NULL ){
