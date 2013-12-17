@@ -9,53 +9,86 @@ Author URI: http://rogerstringer.com
 */ 
 
 class WP_Bigfoot	{
+    private $footnotes = array();
+    private $option_name = 'wp_bigfoot';
+    private $db_version = 1;
+    private $placement = 'content';
+
 	public $shared_post;
 
 	function __construct(){
     	add_action('init', array($this, 'init'));
-		add_action('wp_footer', array($this, 'flush_ob_end'));
+		add_action('wp_footer', array($this, 'footer'));
 	}
 
 	function init() {
 		global $current_user;
-		ob_start( array($this,"output_callback") );
-
 		add_action('admin_menu', array($this, 'add_admin_pages'));
 
 		add_action( 'add_meta_boxes', array($this,'cd_meta_box_add') );
 
+		add_shortcode('footnote', array($this,'shortcode_footnote') );
+        add_filter( 'the_content', array($this, 'the_content' ), 12 );
+
 		$this->admin_page_init();
 	}
-
-	function output_callback($buffer){
-		return $buffer;
-	}
-
-	function flush_ob_end(){
-		ob_end_flush();
+	function footer(){
+/*
+?>
+		<script>$.bigfoot({ actionOriginalFN: "ignore"});</script>
+<?php
+*/
 	}
 
 	function admin_page_init() {
 		wp_enqueue_script('jquery');
-		wp_enqueue_script( 'wp-bigfoot', plugin_dir_url( __FILE__ ) . 'js/wp-bigfoot.js', 'jquery', '1.4.0', true );
-		wp_enqueue_style('wp-bigfoot', plugin_dir_url( __FILE__ ) . 'css/wp-bigfoot.css');
+		if( is_admin() ){
+			wp_enqueue_style('wp-bigfoot', plugin_dir_url( __FILE__ ) . 'css/wp-bigfoot.css');
+		}else{
+			wp_enqueue_script( 'bigfoot', plugin_dir_url( __FILE__ ) . 'js/bigfoot.min.js', 'jquery', '1.4.0', true );
+			wp_enqueue_script( 'wp-bigfoot', plugin_dir_url( __FILE__ ) . 'js/wp-bigfoot.js', 'jquery', '1.4.0', true );
+			wp_enqueue_style('wp-bigfoot', plugin_dir_url( __FILE__ ) . 'css/bigfoot-default.css');
+		}
 	}
 
 	function add_admin_pages(){
-#		add_submenu_page("edit.php", __('WP BigFoot', 'wpbigfoot'), __('WP BigFoot', 'wpbigfoot'), 'edit_posts', __FILE__, array($this, 'output_existing_menu_sub_admin_page'));
+		add_submenu_page("edit.php", __('Footnotes', 'wpbigfoot'), __('Footnotes', 'wpbigfoot'), 'edit_posts', __FILE__, array($this, 'output_existing_menu_sub_admin_page'));
 	}
 
-	function process_post_options($params) {
-		global $current_user;
+	function shortcode_footnote( $atts, $content=NULL ){
+        global $id;
+		if ( null === $content )	return;
+		if ( ! isset( $this->footnotes[$id] ) ) $this->footnotes[$id] = array();
+		$this->footnotes[$id][] = $content;
+		$count = count( $this->footnotes[$id] );
+		return '<a href="#footnote-' . $count . '-' . $id . '" ' . 'id="note-' . $count . '-' . $id . '" ' . 'rel="footnote">' . $count . '</a>';
+	}
+	
+	function the_content($content) {
+        return $this->get_footnotes( $content );
 	}
 
-	function process_delete($key) {
-		wp_delete_post( $post->ID );
-	}
-
-	function redirect($url){
-		wp_redirect( $url );
-		exit;
+    function get_footnotes( $content ) {
+        global $id;
+        if ( empty( $this->footnotes[$id] ) )	return $content;
+		$footnotes = $this->footnotes[$id];
+		if( count($footnotes) ){
+			$content .= '<div class="footnotes">';
+			$content .= '<hr />';
+			$content .= '<ol>';
+			foreach ( $footnotes as $number => $footnote ): 
+				$number++;
+				$content .= '<li id="footnote-'.$number.'-'.$id.'" class="footnote">';
+				$content .= '<p>';
+				$content .= $footnote;
+				$content .= '<a href="#note-'.$number.'-'.$id.'" class="footnote-return">&#8617;</a>';
+				$content .= '</p>';
+				$content .= '</li><!--/#footnote-'.$number.'.footnote-->';
+			endforeach;
+			$content .= '</ol>';
+			$content .= '</div><!--/#footnotes-->';
+		}
+        return $content;
 	}
 
 	function output_existing_menu_sub_admin_page(){
