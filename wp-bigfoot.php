@@ -123,11 +123,6 @@ class WP_Bigfoot	{
 #		add_meta_box( 'my-meta-box-id', 'WP BigFoot', array($this,'cd_meta_box_cb'), 'post', 'side', 'core' );
 	}
 	function cd_meta_box_cb( $post ){
-?>
-		<a class="button" href="edit.php?page=<?php echo plugin_basename(__FILE__); ?>&postid=<?php echo $post->ID?>" target="_blank">Share Draft</a><br />
-		<br />
-		<small>This will open a new window to the <em>WP BigFoot</em> area where you can create a new Shared Draft Link</small>
-<?php
 	}
 }
 new WP_Bigfoot();
